@@ -1,27 +1,32 @@
 const drawScatterplot = (data) => {
-    // T06-2 Step 2.2 Set the dimensions and margins of the chart area
     const svg = d3.select("#scatterplot")
         .append("svg")
         .attr("viewBox", `0 0 ${width} ${height}`);
 
-    // Create an inner chart group with margins
     innerChartS = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
     
-    // T06-2 Step 2.3 Set up x and y scales using data extents
-    const xScaleS = d3.scaleLinear()
-        .domain(d3.extent(data, d => d.star))
-        .nice()
-        .range([0, innerWidth]);
+    // Set up the ranges once (domains will be updated dynamically)
+    xScaleS.range([0, innerWidth]);
+    yScaleS.range([innerHeight, 0]);
 
-    const yScaleS = d3.scaleLinear()
-        .domain(d3.extent(data, d => d.screenSize))
-        .nice()
-        .range([innerHeight, 0]);
+    const xExtent = d3.extent(data, d => d.star);
+    const yExtent = d3.extent(data, d => d.screenSize);
 
-    // T06-2 Step 2.4 Set up colours (colorScale is in shared-constants.js)
+    xScaleS.domain([xExtent[0] - 0.5, xExtent[1] + 0.5]);
+    yScaleS.domain([yExtent[0], yExtent[1]]).nice();
 
-    // T06-2 Step 2.5 Draw the circles
+    // Add classes to axes so we can update them later
+    innerChartS.append("g")
+        .attr("class", "x-axis-s")
+        .attr("transform", `translate(0, ${innerHeight})`)
+        .call(d3.axisBottom(xScaleS));
+
+    innerChartS.append("g")
+        .attr("class", "y-axis-s")
+        .call(d3.axisLeft(yScaleS));
+
+    // Draw circles
     innerChartS.selectAll("circle")
         .data(data)
         .join("circle")
@@ -29,54 +34,53 @@ const drawScatterplot = (data) => {
         .attr("cy", d => yScaleS(d.screenSize))
         .attr("r", 4)
         .attr("fill", d => colorScale(d.screenTech))
-        .attr("opacity", 0.6)
-        .attr("stroke", "white")
-        .attr("stroke-width", 0.5)
-        .style("cursor", "pointer");
+        .attr("opacity", 0.5); 
 
-    // T06-2 Step 2.6 Add bottom and left axis
-    const bottomAxis = d3.axisBottom(xScaleS);
-    innerChartS.append("g")
-        .attr("transform", `translate(0, ${innerHeight})`)
-        .call(bottomAxis);
+    // Labels and Legend
+    svg.append("text").text("Star Rating").attr("text-anchor", "end").attr("x", width - 20).attr("y", height - 5).attr("class", "axis-label");
+    svg.append("text").text("Screen size (inches)").attr("x", 20).attr("y", 20).attr("class", "axis-label");
 
-    const leftAxis = d3.axisLeft(yScaleS);
-    innerChartS.append("g")
-        .call(leftAxis);
+    const uniqueTechs = [...new Set(data.map(d => d.screenTech))];
+    const legend = svg.append('g').attr('class', 'legend').attr('transform', `translate(${width - 140}, ${margin.top})`);
 
-    // Axis Labels
-    svg.append("text")
-        .text("Star Rating")
-        .attr("text-anchor", "end")
-        .attr("x", width - 20)
-        .attr("y", height - 5)
-        .attr("class", "axis-label");
-
-    svg.append("text")
-        .text("Screen Size (inches)")
-        .attr("x", 20)
-        .attr("y", 20)
-        .attr("class", "axis-label");
-
-    // T06-2 Step 2.7 Add legend on the right-hand side
-    const legend = innerChartS.append("g")
-        .attr("transform", `translate(${innerWidth - 80}, 10)`);
-
-    const techs = ["LED", "LCD", "OLED"];
-    
-    techs.forEach((tech, i) => {
-        const legendRow = legend.append("g")
-            .attr("transform", `translate(0, ${i * 20})`);
-
-        legendRow.append("circle")
-            .attr("r", 5)
-            .attr("fill", colorScale(tech));
-
-        legendRow.append("text")
-            .text(tech)
-            .attr("x", 10)
-            .attr("y", 4)
-            .style("font-size", "12px")
-            .attr("fill", "#333");
+    uniqueTechs.forEach((tech, i) => {
+        const g = legend.append('g').attr('transform', `translate(0, ${i * 22})`);
+        g.append('rect').attr('width', 12).attr('height', 12).attr('fill', colorScale(tech));
+        g.append('text').attr('x', 18).attr('y', 10).text(tech).attr('class', 'axis-label');
     });
+};
+
+// Update Scatterplot dynamically
+const updateScatterplot = (updatedData) => {
+    // 1. Update the domains (handle empty data just in case)
+    if (updatedData.length > 0) {
+        xScaleS.domain(d3.extent(updatedData, d => d.star)).nice();
+        yScaleS.domain(d3.extent(updatedData, d => d.screenSize)).nice();
+    } else {
+        xScaleS.domain([0, 1]);
+        yScaleS.domain([0, 1]);
+    }
+
+    // 2. Update the axes smoothly
+    innerChartS.select(".x-axis-s").transition().duration(500).call(d3.axisBottom(xScaleS));
+    innerChartS.select(".y-axis-s").transition().duration(500).call(d3.axisLeft(yScaleS));
+
+    // 3. Update the circles using the D3 join pattern
+    innerChartS.selectAll("circle")
+        .data(updatedData)
+        .join(
+            enter => enter.append("circle")
+                .attr("cx", d => xScaleS(d.star))
+                .attr("cy", d => yScaleS(d.screenSize))
+                .attr("r", 4)
+                .attr("fill", d => colorScale(d.screenTech))
+                .attr("opacity", 0.5),
+            update => update.transition().duration(500)
+                .attr("cx", d => xScaleS(d.star))
+                .attr("cy", d => yScaleS(d.screenSize)),
+            exit => exit.transition().duration(500).attr("r", 0).remove()
+        );
+
+    // 4. Re-attach mouse events to the newly updated dots
+    handleMouseEvents();
 };

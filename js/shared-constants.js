@@ -5,7 +5,7 @@ const height = 400; // Total height of the chart
 const innerWidth = width - margin.left - margin.right;
 const innerHeight = height - margin.top - margin.bottom;
 
-/* Make the colours accessible globally */
+//Make the colours accessible globally
 const barColor = "#606464";
 const bodyBackgroundColor = "#fffaf0";
 
@@ -44,5 +44,8 @@ const colorScale = d3.scaleOrdinal()
 const tooltipWidth = 120;
 const tooltipHeight = 30;
 
-// Global variable for the scatterplot inner chart (used in interactions.js)
+// Global variable for the scatterplot inner chart
 let innerChartS;
+
+const xScaleS = d3.scaleLinear();
+const yScaleS = d3.scaleLinear();

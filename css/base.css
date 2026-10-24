@@ -69,7 +69,7 @@ h3 {
 }
 
 h1 {
-    font-size: 28px;
+    font-size: 30px;
 }
 
 h2 {
@@ -81,11 +81,10 @@ h3 {
 }
 
 p {
-    margin: 0 0 16px 0;
+    margin: 0 0 25px 0;
     color: #3f2f28;
 }
 
-/* Filters/buttons */
 #filters_screen {
     display: flex;
     gap: 12px;
@@ -93,9 +92,7 @@ p {
     margin: 14px 0 18px 0;
 }
 
-/* Filter buttons — use classes so we can toggle active state */
-
-/* Chart container - keep a little spacing */
+/* Chart container*/
 .responsive-svg-container {
     width: 100%;
     max-width: 1000px;
@@ -147,12 +144,6 @@ footer p {
         padding: 8px 10px;
     }
 }
-
-
-
-
-
-
 
 /* Styling for the filter buttons */
 #filters_screen, #filters_size {
